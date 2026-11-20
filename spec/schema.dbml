@@ -1,0 +1,92 @@
+Table coinref {
+  coin_id  text [pk, note: 'CoinGecko id: ripple, shiba-inu']
+  symbol   text [note: 'не уникален, только для отображения']
+  name     text
+  icon_url text [note: 'image.small из GET /coins/{id}; NULL — ещё не загружена']
+
+  Note: 'Справочник монет. Список — GET /api/v3/coins/list, раз в сутки. Иконка — лениво, по одной.'
+}
+
+Table curref {
+  cur_id    text [pk, note: 'ISO-4217 в нижнем регистре: usd, byn']
+  cur_label text [note: 'подпись для UI: Доллар США, Белорусский рубль']
+
+  Note: 'Справочник валют учёта. Заполняется при создании схемы, извне не обновляется.'
+}
+
+Table purchase {
+  purchase_id integer   [pk, increment]
+  coin_id     text      [ref: > coinref.coin_id, not null]
+  occurred_on datetime  [note: 'YYYY-MM-DD']
+  cur_id      text      [ref: > curref.cur_id, not null, note: 'валюта покупки']
+  base_cur_id text      [ref: > curref.cur_id, not null, note: 'основная валюта на момент ввода']
+  rate        integer   [not null, note: 'Int64, 1e8: 1 cur_id = rate base_cur_id; при cur_id = base_cur_id — 100000000']
+  qty         integer   [note: 'Int64, 1e8, > 0']
+  price       integer   [note: 'Int64, 1e8, в cur_id']
+  fee         integer   [note: 'Int64, 1e4, в cur_id']
+  note        text
+
+  indexes {
+    (occurred_on, purchase_id)
+    coin_id
+  }
+}
+
+Table sale {
+  sale_id     integer   [pk, increment]
+  coin_id     text      [ref: > coinref.coin_id, not null]
+  occurred_on datetime  [note: 'YYYY-MM-DD']
+  cur_id      text      [ref: > curref.cur_id, not null, note: 'валюта продажи']
+  base_cur_id text      [ref: > curref.cur_id, not null, note: 'основная валюта на момент ввода']
+  rate        integer   [not null, note: 'Int64, 1e8: 1 cur_id = rate base_cur_id; при cur_id = base_cur_id — 100000000']
+  qty         integer   [note: 'Int64, 1e8, > 0']
+  price       integer   [note: 'Int64, 1e8, в cur_id']
+  fee         integer   [note: 'Int64, 1e4, в cur_id']
+  note        text
+
+  indexes {
+    (occurred_on, sale_id)
+    coin_id
+  }
+}
+
+Table lotusage {
+  sale_id     integer [ref: > sale.sale_id, note: 'продажа']
+  purchase_id integer [ref: > purchase.purchase_id, note: 'списываемая партия']
+  qty         integer [note: 'Int64, 1e8: списано с партии, > 0']
+
+  indexes {
+    (sale_id, purchase_id) [pk]
+  }
+
+  Note: 'Списание продажи по партиям. Себестоимость не хранится — производная.'
+}
+
+Table fxrate {
+  cur_id      text     [ref: > curref.cur_id]
+  base_cur_id text     [ref: > curref.cur_id]
+  rate        integer  [note: 'Int64, 1e8: 1 cur_id = rate base_cur_id']
+  fetched_at  datetime [note: 'ISO-8601 UTC']
+
+  indexes {
+    (cur_id, base_cur_id) [pk]
+  }
+
+  Note: 'Кэш текущего курса, только для предзаполнения rate. Историю курсов не хранит.'
+}
+
+Table quote {
+  coin_id    text     [ref: > coinref.coin_id, note: 'монета котировки']
+  cur_id     text     [ref: > curref.cur_id, note: 'валюта котировки']
+  price      integer  [note: 'Int64, 1e8']
+  fetched_at datetime [note: 'ISO-8601 UTC']
+
+  indexes {
+    (coin_id, cur_id) [pk]
+  }
+}
+
+Table setting {
+  setting_id    text [pk]
+  setting_value text
+}

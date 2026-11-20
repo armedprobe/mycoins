@@ -1,0 +1,254 @@
+object FormMain: TFormMain
+  Left = 0
+  Height = 640
+  Top = 0
+  Width = 960
+  Caption = 'mycoins'
+  ClientHeight = 640
+  ClientWidth = 960
+  Constraints.MinHeight = 480
+  Constraints.MinWidth = 900
+  Font.Height = -13
+  Menu = mnuMain
+  Position = poScreenCenter
+  LCLVersion = '4.8.0.0'
+  OnCreate = FormCreate
+  object pnlTop: TPanel
+    Left = 0
+    Height = 40
+    Top = 0
+    Width = 960
+    Align = alTop
+    BevelOuter = bvNone
+    ClientHeight = 40
+    ClientWidth = 960
+    TabOrder = 0
+    object btnBuy: TButton
+      Left = 8
+      Height = 32
+      Top = 4
+      Width = 96
+      BorderSpacing.Left = 8
+      BorderSpacing.Top = 4
+      BorderSpacing.Bottom = 4
+      Caption = '&Покупка'
+      TabOrder = 0
+      OnClick = NotImplemented
+    end
+    object btnSell: TButton
+      Left = 112
+      Height = 32
+      Top = 4
+      Width = 96
+      BorderSpacing.Left = 8
+      BorderSpacing.Top = 4
+      BorderSpacing.Bottom = 4
+      Caption = 'П&родажа'
+      TabOrder = 1
+      OnClick = NotImplemented
+    end
+    object btnDelete: TButton
+      Left = 216
+      Height = 32
+      Top = 4
+      Width = 96
+      BorderSpacing.Left = 8
+      BorderSpacing.Top = 4
+      BorderSpacing.Bottom = 4
+      Caption = '&Удалить'
+      Enabled = False
+      TabOrder = 2
+      OnClick = NotImplemented
+    end
+    object btnRefresh: TButton
+      Left = 336
+      Height = 32
+      Top = 4
+      Width = 96
+      BorderSpacing.Left = 24
+      BorderSpacing.Top = 4
+      BorderSpacing.Bottom = 4
+      Caption = 'О&бновить'
+      TabOrder = 3
+      OnClick = btnRefreshClick
+    end
+    object cboBase: TComboBox
+      Left = 832
+      Height = 25
+      Top = 4
+      Width = 120
+      Align = alRight
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 8
+      BorderSpacing.Bottom = 4
+      ItemHeight = 17
+      ItemIndex = 1
+      Items.Strings = (
+        'byn'
+        'usd'
+      )
+      Style = csDropDownList
+      TabOrder = 4
+      Text = 'usd'
+      OnChange = NotImplemented
+    end
+    object lblBase: TLabel
+      Left = 780
+      Height = 32
+      Top = 4
+      Width = 44
+      Align = alRight
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 8
+      BorderSpacing.Bottom = 4
+      Caption = 'Валюта'
+      Layout = tlCenter
+    end
+  end
+  object vstMain: TLazVirtualStringTree
+    Left = 16
+    Height = 545
+    Top = 56
+    Width = 928
+    Align = alClient
+    BorderSpacing.Left = 16
+    BorderSpacing.Top = 16
+    BorderSpacing.Right = 16
+    BorderSpacing.Bottom = 16
+    DefaultNodeHeight = 28
+    Header.AutoSizeIndex = 0
+    Header.Columns = <    
+      item
+        MinWidth = 200
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 0
+        Text = 'Монета / операция'
+        Width = 284
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 1
+        Text = 'Кол-во'
+        Width = 100
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 2
+        Text = 'Цена'
+        Width = 90
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 3
+        Text = 'Сумма'
+        Width = 90
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 4
+        Text = 'Комиссия'
+        Width = 80
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 5
+        Text = 'Курс'
+        Width = 80
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 6
+        Text = 'Стоимость'
+        Width = 100
+      end    
+      item
+        Alignment = taRightJustify
+        MinWidth = 80
+        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
+        Position = 7
+        Text = 'P&L'
+        Width = 100
+      end>
+    Header.Height = 28
+    Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoVisible, hoHeightResize]
+    Header.Style = hsFlatButtons
+    Indent = 16
+    NodeDataSize = 12
+    TabOrder = 1
+    TreeOptions.PaintOptions = [toShowButtons, toShowRoot, toShowTreeLines]
+    TreeOptions.SelectionOptions = [toFullRowSelect]
+    OnBeforeCellPaint = vstMainBeforeCellPaint
+    OnDblClick = vstMainDblClick
+    OnFocusChanged = vstMainFocusChanged
+    OnGetText = vstMainGetText
+    OnPaintText = vstMainPaintText
+    OnKeyDown = vstMainKeyDown
+  end
+  object sbMain: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 617
+    Width = 960
+    Panels = <>
+    SizeGrip = False
+  end
+  object mnuMain: TMainMenu
+    object mnuFile: TMenuItem
+      Caption = '&Файл'
+      object mnuOpenDb: TMenuItem
+        Caption = '&Открыть базу...'
+        ShortCut = 16463
+        OnClick = NotImplemented
+      end
+      object mnuFileSep: TMenuItem
+        Caption = '-'
+      end
+      object mnuQuit: TMenuItem
+        Caption = 'В&ыход'
+        OnClick = mnuQuitClick
+      end
+    end
+    object mnuService: TMenuItem
+      Caption = '&Сервис'
+      object mnuRefreshRates: TMenuItem
+        Caption = 'Обновить &курсы'
+        OnClick = NotImplemented
+      end
+      object mnuRefreshQuotes: TMenuItem
+        Caption = 'Обновить &котировки'
+        OnClick = NotImplemented
+      end
+      object mnuRefreshCoins: TMenuItem
+        Caption = 'Обновить список &монет'
+        OnClick = NotImplemented
+      end
+      object mnuServiceSep: TMenuItem
+        Caption = '-'
+      end
+      object mnuRefreshView: TMenuItem
+        Caption = '&Обновить вид'
+        ShortCut = 116
+        OnClick = btnRefreshClick
+      end
+    end
+    object mnuHelp: TMenuItem
+      Caption = 'С&правка'
+      object mnuAbout: TMenuItem
+        Caption = '&О программе'
+        OnClick = NotImplemented
+      end
+    end
+  end
+end
