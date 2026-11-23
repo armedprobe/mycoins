@@ -1,25 +1,30 @@
-﻿unit UIMain;
+unit UIMain;
 
 {$mode objfpc}{$H+}{$codepage utf8}
+{ Главная форма: тулбар, грид-карточка сделок, статусбар. }
 
 interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ComCtrls,
-  Menus, ExtCtrls, LCLType, laz.VirtualTrees,
-  UIPalette, UINumFmt, UIMainData;
+  Menus, ExtCtrls, ActnList, LCLType, Math,
+  UIPalette, UINumFmt, UIGrid, UIMainData;
 
 type
-  TNodeKind = (nkCoin, nkOp);
-
-  PNodeRec = ^TNodeRec;
-  TNodeRec = record
-    Kind: TNodeKind;
-    Coin: Integer;   // индекс в FPortfolio
-    Op: Integer;     // индекс в FPortfolio[Coin].Ops, только для nkOp
-  end;
-
   TFormMain = class(TForm)
+    actnList: TActionList;
+    actOpenDb: TAction;
+    actQuit: TAction;
+    actBuy: TAction;
+    actSell: TAction;
+    actEdit: TAction;
+    actDelete: TAction;
+    actRefresh: TAction;
+    actRefreshRates: TAction;
+    actRefreshQuotes: TAction;
+    actRefreshCoins: TAction;
+    actChangeBase: TAction;
+    actAbout: TAction;
     mnuMain: TMainMenu;
     mnuFile: TMenuItem;
     mnuOpenDb: TMenuItem;
@@ -40,28 +45,33 @@ type
     btnRefresh: TButton;
     lblBase: TLabel;
     cboBase: TComboBox;
-    vstMain: TLazVirtualStringTree;
     sbMain: TStatusBar;
+    { Sender у части обработчиков не нужен: сигнатура навязана LCL. }
+    {$warn 5024 off}
     procedure FormCreate(Sender: TObject);
-    procedure btnRefreshClick(Sender: TObject);
-    procedure mnuQuitClick(Sender: TObject);
+    procedure ActionsUpdate(AAction: TBasicAction; var Handled: Boolean);
     procedure NotImplemented(Sender: TObject);
-    procedure vstMainGetText(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex; TextType: TVSTTextType; var CellText: string);
-    procedure vstMainPaintText(Sender: TBaseVirtualTree;
-      const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      TextType: TVSTTextType);
-    procedure vstMainBeforeCellPaint(Sender: TBaseVirtualTree;
-      TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-      CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
-    procedure vstMainFocusChanged(Sender: TBaseVirtualTree; Node: PVirtualNode;
-      Column: TColumnIndex);
-    procedure vstMainDblClick(Sender: TObject);
-    procedure vstMainKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure RefreshExecute(Sender: TObject);
+    procedure QuitExecute(Sender: TObject);
+    procedure cboBaseChange(Sender: TObject);
+    procedure GridGetSubCount(Sender: TObject; AItem: Integer; var ACount: Integer);
+    procedure GridGetCell(Sender: TObject; const ARow: TGridRow; ACol: Integer;
+      var AText: string; var AStyle: TGridStyle);
+    procedure GridCompare(Sender: TObject; const A, B: TGridRow; ACol: Integer;
+      var AResult: Integer);
+    procedure GridDblClick(Sender: TObject);
+    procedure GridKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
   private
+    FGrid: TGridCard;
     FPortfolio: TPortfolioRows;
-    function NodeRec(Node: PVirtualNode): PNodeRec;
+    procedure PlaceOnMonitorAt(const AValue: string);
+    procedure CreateGrid;
+    procedure InitColumns;
     procedure Reload;
+    procedure SetPnlCell(AValue: Double; out AText: string;
+      out AStyle: TGridStyle);
+    procedure SetMissingCell(out AText: string; out AStyle: TGridStyle);
+    function FocusedRowIsOp: Boolean;
     procedure Say(const Msg: string);
     procedure UpdateStatus;
   public
@@ -84,63 +94,183 @@ var
 
 implementation
 
-{$R *.lfm}
+const
+  OpKindName: array [TOpKind] of string = ('Покупка', 'Продажа');
 
-function TFormMain.NodeRec(Node: PVirtualNode): PNodeRec;
-begin
-  Result := vstMain.GetNodeData(Node);
-end;
+{$R *.lfm}
 
 procedure TFormMain.FormCreate(Sender: TObject);
 begin
-  vstMain.NodeDataSize := SizeOf(TNodeRec);
-  vstMain.Colors.UnfocusedSelectionColor := clHighlight;
-  vstMain.Colors.UnfocusedSelectionBorderColor := clHighlight;
+  Color := clGridWindow;
+  pnlTop.Color := clGridWindow;
+  if Application.HasOption('monitor-at') then
+    PlaceOnMonitorAt(Application.GetOptionValue('monitor-at'));
+  CreateGrid;
+  InitColumns;
   Reload;
-  ActiveControl := vstMain;
+  ActiveControl := FGrid;
+end;
+
+{ --monitor-at=X,Y: центр рабочей области монитора, содержащего точку экрана. }
+procedure TFormMain.PlaceOnMonitorAt(const AValue: string);
+var
+  Comma: Integer;
+  P: TPoint;
+  Mon: TMonitor;
+  Area: TRect;
+begin
+  Comma := Pos(',', AValue);
+  if (Comma = 0)
+    or not TryStrToInt(Copy(AValue, 1, Comma - 1), P.X)
+    or not TryStrToInt(Copy(AValue, Comma + 1, MaxInt), P.Y) then
+    raise EArgumentException.CreateFmt(
+      '--monitor-at: ожидается X,Y, получено "%s"', [AValue]);
+  Mon := Screen.MonitorFromPoint(P, mdNull);
+  if Mon = nil then
+    raise EArgumentException.CreateFmt(
+      '--monitor-at: точка %d,%d вне мониторов', [P.X, P.Y]);
+  Area := Mon.WorkareaRect;
+  Position := poDesigned;
+  SetBounds(Area.Left + (Area.Width - Width) div 2,
+    Area.Top + (Area.Height - Height) div 2, Width, Height);
+end;
+
+procedure TFormMain.CreateGrid;
+begin
+  FGrid := TGridCard.Create(Self);
+  FGrid.Parent := Self;
+  FGrid.Align := alClient;
+  FGrid.BorderSpacing.Left := 16;
+  FGrid.BorderSpacing.Top := 16;
+  FGrid.BorderSpacing.Right := 16;
+  FGrid.BorderSpacing.Bottom := 16;
+  FGrid.TabOrder := 1;
+  FGrid.OnGetSubCount := @GridGetSubCount;
+  FGrid.OnGetCell := @GridGetCell;
+  FGrid.OnCompare := @GridCompare;
+  FGrid.OnDblClick := @GridDblClick;
+  FGrid.OnKeyDown := @GridKeyDown;
+end;
+
+procedure TFormMain.InitColumns;
+begin
+  FGrid.AddColumn(ColTitle, 'Монета / операция', 190, taLeftJustify, gkText);
+  FGrid.AddColumn(ColQty, 'Кол-во', 110, taRightJustify, gkText);
+  FGrid.AddColumn(ColPrice, 'Цена', 95, taRightJustify, gkText);
+  FGrid.AddColumn(ColAmount, 'Сумма', 95, taRightJustify, gkText);
+  FGrid.AddColumn(ColFee, 'Комиссия', 95, taRightJustify, gkText);
+  FGrid.AddColumn(ColRate, 'Курс', 80, taRightJustify, gkText);
+  FGrid.AddColumn(ColValue, 'Стоимость', 100, taRightJustify, gkText);
+  FGrid.AddColumn(ColPnl, 'P&L', 110, taRightJustify, gkBadge);
 end;
 
 procedure TFormMain.Reload;
-var
-  CoinNode, OpNode: PVirtualNode;
-  Rec: PNodeRec;
-  I, J: Integer;
 begin
   FPortfolio := MockPortfolio;
+  FGrid.LoadItems(Length(FPortfolio));
+  UpdateStatus;
+end;
 
-  vstMain.BeginUpdate;
-  try
-    vstMain.Clear;
-    for I := 0 to High(FPortfolio) do
-    begin
-      CoinNode := vstMain.AddChild(nil);
-      Rec := NodeRec(CoinNode);
-      Rec^.Kind := nkCoin;
-      Rec^.Coin := I;
-      Rec^.Op := -1;
+procedure TFormMain.GridGetSubCount(Sender: TObject; AItem: Integer;
+  var ACount: Integer);
+begin
+  ACount := Length(FPortfolio[AItem].Ops);
+end;
 
-      for J := 0 to High(FPortfolio[I].Ops) do
-      begin
-        OpNode := vstMain.AddChild(CoinNode);
-        Rec := NodeRec(OpNode);
-        Rec^.Kind := nkOp;
-        Rec^.Coin := I;
-        Rec^.Op := J;
-      end;
+{ Порядок по возрастанию: направление применяет грид. }
+procedure TFormMain.GridCompare(Sender: TObject; const A, B: TGridRow;
+  ACol: Integer; var AResult: Integer);
+var
+  CoinA, CoinB: TPortfolioRow;
+  OpA, OpB: TOpRow;
+begin
+  if A.Sub < 0 then
+  begin
+    CoinA := FPortfolio[A.Item];
+    CoinB := FPortfolio[B.Item];
+    case ACol of
+      ColTitle: AResult := CompareText(CoinA.Name, CoinB.Name);
+      ColQty: AResult := CompareValue(CoinA.Qty, CoinB.Qty);
+      ColPrice: AResult := CompareValue(CoinA.Price, CoinB.Price);
+      ColValue: AResult := CompareValue(CoinA.Value, CoinB.Value);
+      ColPnl: AResult := CompareValue(CoinA.PnL, CoinB.PnL);
     end;
-
-    CoinNode := vstMain.GetFirst;
-    if CoinNode <> nil then
-    begin
-      vstMain.Expanded[CoinNode] := True;
-      vstMain.FocusedNode := CoinNode;
-      vstMain.Selected[CoinNode] := True;
-    end;
-  finally
-    vstMain.EndUpdate;
+    Exit;
   end;
 
-  UpdateStatus;
+  OpA := FPortfolio[A.Item].Ops[A.Sub];
+  OpB := FPortfolio[B.Item].Ops[B.Sub];
+  case ACol of
+    ColTitle:
+      begin
+        AResult := CompareText(OpA.OccurredOn, OpB.OccurredOn);
+        if AResult = 0 then
+          AResult := CompareValue(Ord(OpA.Kind), Ord(OpB.Kind));
+      end;
+    ColQty: AResult := CompareValue(OpA.Qty, OpB.Qty);
+    ColPrice: AResult := CompareValue(OpA.Price, OpB.Price);
+    ColAmount: AResult := CompareValue(OpA.Amount, OpB.Amount);
+    ColFee: AResult := CompareValue(OpA.Fee, OpB.Fee);
+    ColRate: AResult := CompareValue(OpA.Rate, OpB.Rate);
+    ColPnl: AResult := CompareValue(OpA.PnL, OpB.PnL);
+  end;
+end;
+
+procedure TFormMain.GridGetCell(Sender: TObject; const ARow: TGridRow;
+  ACol: Integer; var AText: string; var AStyle: TGridStyle);
+var
+  Coin: TPortfolioRow;
+  Op: TOpRow;
+begin
+  Coin := FPortfolio[ARow.Item];
+  if ARow.Sub < 0 then
+  begin
+    case ACol of
+      ColTitle: AText := Coin.Name + '   ' + Coin.Symbol;
+      ColQty: AText := FmtQty(Coin.Qty);
+      ColPrice: AText := FmtMoney(Coin.Price);
+      ColAmount, ColFee, ColRate: SetMissingCell(AText, AStyle);
+      ColValue: AText := FmtMoney(Coin.Value);
+      ColPnl: SetPnlCell(Coin.PnL, AText, AStyle);
+    end;
+    Exit;
+  end;
+
+  Op := Coin.Ops[ARow.Sub];
+  case ACol of
+    ColTitle: AText := Op.OccurredOn + '   ' + OpKindName[Op.Kind];
+    ColQty: AText := FmtQty(Op.Qty);
+    ColPrice: AText := FmtPrice(Op.Price);
+    ColAmount: AText := FmtMoney(Op.Amount);
+    ColFee: AText := FmtMoney(Op.Fee / ScaleFee);
+    ColRate: AText := FmtRate(Op.Rate);
+    ColValue: SetMissingCell(AText, AStyle);
+    ColPnl:
+      begin
+        if Op.Kind = okSell then
+          SetPnlCell(Op.PnL, AText, AStyle)
+        else
+          SetMissingCell(AText, AStyle);
+      end;
+  end;
+end;
+
+procedure TFormMain.SetPnlCell(AValue: Double; out AText: string;
+  out AStyle: TGridStyle);
+begin
+  AText := FmtPnl(AValue);
+  if AValue > 0 then
+    AStyle := gsPositive
+  else if AValue < 0 then
+    AStyle := gsNegative
+  else
+    AStyle := gsMuted;
+end;
+
+procedure TFormMain.SetMissingCell(out AText: string; out AStyle: TGridStyle);
+begin
+  AText := Dash;
+  AStyle := gsMuted;
 end;
 
 procedure TFormMain.UpdateStatus;
@@ -162,27 +292,42 @@ begin
     [Length(FPortfolio), FmtMoney(Cost), FmtMoney(Value), FmtPnl(PnL)]);
 end;
 
-procedure TFormMain.btnRefreshClick(Sender: TObject);
+function TFormMain.FocusedRowIsOp: Boolean;
+begin
+  Result := FGrid.FocusedRow.Sub >= 0;
+end;
+
+procedure TFormMain.RefreshExecute(Sender: TObject);
 begin
   Reload;
 end;
 
-procedure TFormMain.mnuQuitClick(Sender: TObject);
+procedure TFormMain.QuitExecute(Sender: TObject);
 begin
   Close;
 end;
 
 procedure TFormMain.NotImplemented(Sender: TObject);
 var
-  S: string;
+  CmdCaption: string;
 begin
-  if Sender is TMenuItem then
-    S := TMenuItem(Sender).Caption
-  else if Sender is TButton then
-    S := TButton(Sender).Caption
-  else
-    S := '';
-  Say('Ещё не реализовано: ' + StringReplace(S, '&', '', [rfReplaceAll]));
+  CmdCaption := TCustomAction(Sender).Caption;
+  Say(Format('Ещё не реализовано: %s',
+    [StringReplace(CmdCaption, '&', '', [rfReplaceAll])]));
+end;
+
+{ Доступность команд — единственное место, где она вычисляется: остальное
+  берут из действий. Все прочие действия доступны всегда. }
+procedure TFormMain.ActionsUpdate(AAction: TBasicAction; var Handled: Boolean);
+var
+  OnOp: Boolean;
+begin
+  OnOp := FocusedRowIsOp;
+  if AAction = actEdit then
+    actEdit.Enabled := OnOp
+  else if AAction = actDelete then
+    actDelete.Enabled := OnOp;
+  Handled := True;
 end;
 
 procedure TFormMain.Say(const Msg: string);
@@ -190,135 +335,26 @@ begin
   sbMain.SimpleText := Msg;
 end;
 
-procedure TFormMain.vstMainGetText(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex; TextType: TVSTTextType;
-  var CellText: string);
-var
-  Rec: PNodeRec;
-  Coin: TPortfolioRow;
-  Op: TOpRow;
+procedure TFormMain.GridDblClick(Sender: TObject);
 begin
-  Rec := NodeRec(Node);
-  case Rec^.Kind of
-    nkCoin:
-      begin
-        Coin := FPortfolio[Rec^.Coin];
-        case Column of
-          ColTitle: CellText := Coin.Name + '  ' + UpperCase(Coin.Symbol);
-          ColQty: CellText := FmtQty(Coin.Qty);
-          ColPrice: CellText := FmtMoney(Coin.Price);
-          ColAmount, ColFee, ColRate: CellText := Dash;
-          ColValue: CellText := FmtMoney(Coin.Value);
-          ColPnl: CellText := FmtPnl(Coin.PnL);
-        end;
-      end;
-    nkOp:
-      begin
-        Op := FPortfolio[Rec^.Coin].Ops[Rec^.Op];
-        case Column of
-          ColTitle:
-            begin
-              if Op.Kind = okBuy then
-                CellText := Op.OccurredOn + '   Покупка'
-              else
-                CellText := Op.OccurredOn + '   Продажа';
-            end;
-          ColQty: CellText := FmtQty(Op.Qty);
-          ColPrice: CellText := FmtPrice(Op.Price);
-          ColAmount: CellText := FmtMoney(Op.Amount);
-          ColFee: CellText := FmtMoney(Op.Fee / ScaleFee);
-          ColRate: CellText := FmtRate(Op.Rate);
-          ColValue: CellText := Dash;
-          ColPnl:
-            begin
-              if Op.Kind = okSell then
-                CellText := FmtPnl(Op.PnL)
-              else
-                CellText := Dash;
-            end;
-        end;
-      end;
-  end;
+  actEdit.Execute;
 end;
 
-procedure TFormMain.vstMainPaintText(Sender: TBaseVirtualTree;
-  const TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  TextType: TVSTTextType);
-var
-  Rec: PNodeRec;
-  PnL: Double;
-  HasPnL: Boolean;
-begin
-  if vstMain.Selected[Node] then
-  begin
-    TargetCanvas.Font.Color := clHighlightText;
-    Exit;
-  end;
-
-  TargetCanvas.Font.Color := vstMain.Font.Color;
-  if Column <> ColPnl then
-    Exit;
-
-  Rec := NodeRec(Node);
-  HasPnL := False;
-  PnL := 0;
-  if Rec^.Kind = nkCoin then
-  begin
-    PnL := FPortfolio[Rec^.Coin].PnL;
-    HasPnL := True;
-  end
-  else if Rec^.Kind = nkOp then
-  begin
-    PnL := FPortfolio[Rec^.Coin].Ops[Rec^.Op].PnL;
-    HasPnL := FPortfolio[Rec^.Coin].Ops[Rec^.Op].Kind = okSell;
-  end;
-
-  if not HasPnL then
-    TargetCanvas.Font.Color := clDataMuted
-  else if PnL > 0 then
-    TargetCanvas.Font.Color := clDataPositive
-  else if PnL < 0 then
-    TargetCanvas.Font.Color := clDataNegative
-  else
-    TargetCanvas.Font.Color := clDataMuted;
-end;
-
-procedure TFormMain.vstMainFocusChanged(Sender: TBaseVirtualTree;
-  Node: PVirtualNode; Column: TColumnIndex);
-begin
-  btnDelete.Enabled := (Node <> nil) and (NodeRec(Node)^.Kind = nkOp);
-end;
-
-procedure TFormMain.vstMainBeforeCellPaint(Sender: TBaseVirtualTree;
-  TargetCanvas: TCanvas; Node: PVirtualNode; Column: TColumnIndex;
-  CellPaintMode: TVTCellPaintMode; CellRect: TRect; var ContentRect: TRect);
-begin
-  if (CellPaintMode = cpmPaint) and (NodeRec(Node)^.Kind = nkCoin) then
-  begin
-    TargetCanvas.Brush.Color := clBtnFace;
-    TargetCanvas.FillRect(CellRect);
-  end;
-end;
-
-procedure TFormMain.vstMainDblClick(Sender: TObject);
-var
-  Node: PVirtualNode;
-begin
-  Node := vstMain.FocusedNode;
-  if (Node <> nil) and (NodeRec(Node)^.Kind = nkOp) then
-    Say('Ещё не реализовано: правка операции');
-end;
-
-procedure TFormMain.vstMainKeyDown(Sender: TObject; var Key: Word;
+{ Enter — не ShortCut действия: тот срабатывал бы на всей форме и перехватывал
+  нажатие кнопки в фокусе. }
+procedure TFormMain.GridKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
-  case Key of
-    VK_INSERT:
-      NotImplemented(btnBuy);
-    VK_DELETE:
-      if btnDelete.Enabled then
-        NotImplemented(btnDelete);
+  if (Key = VK_RETURN) and (Shift = []) then
+  begin
+    actEdit.Execute;
+    Key := 0;
   end;
+end;
+
+procedure TFormMain.cboBaseChange(Sender: TObject);
+begin
+  actChangeBase.Execute;
 end;
 
 end.

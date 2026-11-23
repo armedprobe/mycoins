@@ -28,49 +28,44 @@ object FormMain: TFormMain
       Height = 32
       Top = 4
       Width = 96
+      Action = actBuy
       BorderSpacing.Left = 8
       BorderSpacing.Top = 4
       BorderSpacing.Bottom = 4
-      Caption = '&Покупка'
       TabOrder = 0
-      OnClick = NotImplemented
     end
     object btnSell: TButton
       Left = 112
       Height = 32
       Top = 4
       Width = 96
+      Action = actSell
       BorderSpacing.Left = 8
       BorderSpacing.Top = 4
       BorderSpacing.Bottom = 4
-      Caption = 'П&родажа'
       TabOrder = 1
-      OnClick = NotImplemented
     end
     object btnDelete: TButton
       Left = 216
       Height = 32
       Top = 4
       Width = 96
+      Action = actDelete
       BorderSpacing.Left = 8
       BorderSpacing.Top = 4
       BorderSpacing.Bottom = 4
-      Caption = '&Удалить'
-      Enabled = False
       TabOrder = 2
-      OnClick = NotImplemented
     end
     object btnRefresh: TButton
       Left = 336
       Height = 32
       Top = 4
       Width = 96
+      Action = actRefresh
       BorderSpacing.Left = 24
       BorderSpacing.Top = 4
       BorderSpacing.Bottom = 4
-      Caption = 'О&бновить'
       TabOrder = 3
-      OnClick = btnRefreshClick
     end
     object cboBase: TComboBox
       Left = 817
@@ -90,7 +85,7 @@ object FormMain: TFormMain
       Style = csDropDownList
       TabOrder = 4
       Text = 'usd'
-      OnChange = NotImplemented
+      OnChange = cboBaseChange
     end
     object lblBase: TLabel
       Left = 765
@@ -105,97 +100,6 @@ object FormMain: TFormMain
       Layout = tlCenter
     end
   end
-  object vstMain: TLazVirtualStringTree
-    Left = 16
-    Height = 545
-    Top = 56
-    Width = 913
-    Align = alClient
-    BorderSpacing.Left = 16
-    BorderSpacing.Top = 16
-    BorderSpacing.Right = 16
-    BorderSpacing.Bottom = 16
-    DefaultNodeHeight = 28
-    Header.AutoSizeIndex = 0
-    Header.Columns = <    
-      item
-        MinWidth = 200
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 0
-        Text = 'Монета / операция'
-        Width = 269
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 1
-        Text = 'Кол-во'
-        Width = 100
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 2
-        Text = 'Цена'
-        Width = 90
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 3
-        Text = 'Сумма'
-        Width = 90
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 4
-        Text = 'Комиссия'
-        Width = 80
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 5
-        Text = 'Курс'
-        Width = 80
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 6
-        Text = 'Стоимость'
-        Width = 100
-      end    
-      item
-        Alignment = taRightJustify
-        MinWidth = 80
-        Options = [coAllowClick, coDraggable, coEnabled, coParentBidiMode, coParentColor, coResizable, coShowDropMark, coVisible, coAllowFocus]
-        Position = 7
-        Text = 'P&L'
-        Width = 100
-      end>
-    Header.Height = 28
-    Header.Options = [hoAutoResize, hoColumnResize, hoDrag, hoVisible, hoHeightResize]
-    Header.Style = hsFlatButtons
-    Indent = 16
-    NodeDataSize = 12
-    TabOrder = 1
-    TreeOptions.PaintOptions = [toShowButtons, toShowRoot, toShowTreeLines]
-    TreeOptions.SelectionOptions = [toFullRowSelect]
-    OnBeforeCellPaint = vstMainBeforeCellPaint
-    OnDblClick = vstMainDblClick
-    OnFocusChanged = vstMainFocusChanged
-    OnGetText = vstMainGetText
-    OnPaintText = vstMainPaintText
-    OnKeyDown = vstMainKeyDown
-  end
   object sbMain: TStatusBar
     Left = 0
     Height = 23
@@ -208,47 +112,105 @@ object FormMain: TFormMain
     object mnuFile: TMenuItem
       Caption = '&Файл'
       object mnuOpenDb: TMenuItem
-        Caption = '&Открыть базу...'
-        ShortCut = 16463
-        OnClick = NotImplemented
+        Action = actOpenDb
       end
       object mnuFileSep: TMenuItem
         Caption = '-'
       end
       object mnuQuit: TMenuItem
-        Caption = 'В&ыход'
-        OnClick = mnuQuitClick
+        Action = actQuit
       end
     end
     object mnuService: TMenuItem
       Caption = '&Сервис'
       object mnuRefreshRates: TMenuItem
-        Caption = 'Обновить &курсы'
-        OnClick = NotImplemented
+        Action = actRefreshRates
       end
       object mnuRefreshQuotes: TMenuItem
-        Caption = 'Обновить &котировки'
-        OnClick = NotImplemented
+        Action = actRefreshQuotes
       end
       object mnuRefreshCoins: TMenuItem
-        Caption = 'Обновить список &монет'
-        OnClick = NotImplemented
+        Action = actRefreshCoins
       end
       object mnuServiceSep: TMenuItem
         Caption = '-'
       end
       object mnuRefreshView: TMenuItem
-        Caption = '&Обновить вид'
-        ShortCut = 116
-        OnClick = btnRefreshClick
+        Action = actRefresh
       end
     end
     object mnuHelp: TMenuItem
       Caption = 'С&правка'
       object mnuAbout: TMenuItem
-        Caption = '&О программе'
-        OnClick = NotImplemented
+        Action = actAbout
       end
+    end
+  end
+  object actnList: TActionList
+    OnUpdate = ActionsUpdate
+    object actOpenDb: TAction
+      Category = 'Файл'
+      Caption = '&Открыть базу...'
+      ShortCut = 16463
+      OnExecute = NotImplemented
+    end
+    object actQuit: TAction
+      Category = 'Файл'
+      Caption = 'В&ыход'
+      OnExecute = QuitExecute
+    end
+    object actBuy: TAction
+      Category = 'Операции'
+      Caption = '&Покупка'
+      ShortCut = 45
+      OnExecute = NotImplemented
+    end
+    object actSell: TAction
+      Category = 'Операции'
+      Caption = 'П&родажа'
+      OnExecute = NotImplemented
+    end
+    object actEdit: TAction
+      Category = 'Операции'
+      Caption = 'Правка операции'
+      OnExecute = NotImplemented
+    end
+    object actDelete: TAction
+      Category = 'Операции'
+      Caption = '&Удалить'
+      ShortCut = 46
+      OnExecute = NotImplemented
+    end
+    object actRefresh: TAction
+      Category = 'Сервис'
+      Caption = 'О&бновить'
+      ShortCut = 116
+      OnExecute = RefreshExecute
+    end
+    object actRefreshRates: TAction
+      Category = 'Сервис'
+      Caption = 'Обновить &курсы'
+      OnExecute = NotImplemented
+    end
+    object actRefreshQuotes: TAction
+      Category = 'Сервис'
+      Caption = 'Обновить &котировки'
+      OnExecute = NotImplemented
+    end
+    object actRefreshCoins: TAction
+      Category = 'Сервис'
+      Caption = 'Обновить список &монет'
+      OnExecute = NotImplemented
+    end
+    object actChangeBase: TAction
+      Category = 'Сервис'
+      Caption = 'Смена валюты'
+      OnExecute = NotImplemented
+    end
+    object actAbout: TAction
+      Category = 'Справка'
+      Caption = '&О программе'
+      OnExecute = NotImplemented
     end
   end
 end

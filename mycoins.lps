@@ -8,7 +8,9 @@
       <Unit>
         <Filename Value="mycoins.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="-1"/>
+        <CursorPos X="38" Y="12"/>
+        <UsageCount Value="33"/>
       </Unit>
       <Unit>
         <Filename Value="src\ui\uimain.pas"/>
@@ -17,9 +19,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="UIMain"/>
-        <IsVisibleTab Value="True"/>
-        <CursorPos X="17" Y="9"/>
-        <UsageCount Value="20"/>
+        <CursorPos X="23" Y="146"/>
+        <UsageCount Value="33"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
       </Unit>
@@ -27,25 +28,60 @@
         <Filename Value="src\ui\uimaindata.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UIMainData"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="33"/>
       </Unit>
       <Unit>
         <Filename Value="src\ui\uinumfmt.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UINumFmt"/>
-        <UsageCount Value="20"/>
+        <EditorIndex Value="-1"/>
+        <UsageCount Value="33"/>
       </Unit>
       <Unit>
         <Filename Value="src\ui\uipalette.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UIPalette"/>
+        <UsageCount Value="33"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\ui\uigrid.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UIGrid"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <CursorPos X="20" Y="188"/>
+        <UsageCount Value="33"/>
+        <Loaded Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src\ui\uivstspike.pas"/>
+        <UnitName Value="UIVstSpike"/>
         <UsageCount Value="20"/>
       </Unit>
     </Units>
-    <JumpHistory HistoryIndex="-1"/>
+    <JumpHistory HistoryIndex="1">
+      <Position>
+        <Filename Value="src\ui\uimain.pas"/>
+        <Caret Line="11" Column="9"/>
+      </Position>
+      <Position>
+        <Filename Value="src\ui\uimain.pas"/>
+        <Caret Line="27" Column="45" TopLine="17"/>
+      </Position>
+    </JumpHistory>
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes ActiveMode="Default"/>
     </RunParams>
+    <HistoryLists>
+      <List Name="LaunchingApplication" Type="File" Count="2">
+        <Item1 Value="C:\Windows\system32\cmd.exe \C ${TargetCmdLine}"/>
+        <Item2 Value="C:\Windows\system32\cmd.exe /C ${TargetCmdLine}"/>
+      </List>
+      <List Name="CommandLineParameters" Count="1">
+        <Item1 Value="-vst-spike"/>
+      </List>
+    </HistoryLists>
   </ProjectSession>
 </CONFIG>

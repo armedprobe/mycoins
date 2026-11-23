@@ -18,15 +18,19 @@
     <RunParams>
       <FormatVersion Value="2"/>
       <Modes>
-        <Mode Name="Default"/>
+        <Mode Name="Default">
+          <local>
+            <CommandLineParams Value="-vst-spike"/>
+          </local>
+        </Mode>
       </Modes>
     </RunParams>
     <RequiredPackages>
       <Item>
-        <PackageName Value="LCL"/>
+        <PackageName Value="laz.virtualtreeview_package"/>
       </Item>
       <Item>
-        <PackageName Value="laz.virtualtreeview_package"/>
+        <PackageName Value="LCL"/>
       </Item>
     </RequiredPackages>
     <Units>
@@ -56,6 +60,11 @@
         <Filename Value="src/ui/uipalette.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="UIPalette"/>
+      </Unit>
+      <Unit>
+        <Filename Value="src/ui/uigrid.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="UIGrid"/>
       </Unit>
     </Units>
   </ProjectOptions>

@@ -29,3 +29,7 @@
   - `C:\lazarus\lazbuild.exe`
   - `C:\lazarus\fpc\3.2.2\bin\x86_64-win64\fpc.exe`
 - Сборка без `.lpi`: `fpc -Mobjfpc -Sh -Fu<каталог юнитов> ...` (`-Sh` = `{$H+}`).
+- GUI агент запускает только на своём мониторе (`spec/intent-agent-monitor.md`):
+  `.\bin\mycoins.exe --monitor-at=$(.\tools\agent-point.ps1)`.
+  У LCL `Process.MainWindowHandle` — скрытое окно `Application`, а не форма:
+  окна формы искать через `EnumWindows` по pid.
